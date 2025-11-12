@@ -1,0 +1,447 @@
+﻿<!DOCTYPE html>
+<html lang="pa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Karah Parshad Calculator</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #111111;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --orange: #FF8C00;
+            --blue: #0052CC;
+            --blue-active: #003d99;
+            --green: #22c55e;
+            --red: #ef4444;
+            --border: #333333;
+        }
+
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+
+        /* Hide Scrollbar */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+
+        /* Typography */
+        h1 { color: var(--orange); font-size: 1.2rem; font-weight: bold; text-align: center; }
+        .header { padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .sub-text { font-size: 0.8rem; color: var(--text-muted); }
+
+
+        /* Inputs & Forms */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px; }
+        
+        label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
+        
+        input {
+            width: 100%;
+            background: var(--bg-color);
+            border: 1px solid #ffffff;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            outline: none;
+        }
+        input:focus { border-color: var(--orange); box-shadow: 0 0 8px var(--orange); }
+        input.green-text { color: var(--green); border-color: #555; }
+
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-primary { background-color: var(--blue); color: white; border: 1px solid #3b82f6; margin-bottom: 10px; }
+        .btn-primary:active { background-color: var(--blue-active); transform: scale(0.98); }
+        
+        .btn-reset { background-color: var(--card-bg); color: #ccc; border: 1px solid var(--border); }
+        .btn-reset:active { background-color: #222; }
+
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; border-radius: 6px; background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border); font-weight: bold; text-align: center; cursor: pointer; }
+        .tab-btn.active { background: var(--orange); color: white; border-color: var(--orange); }
+
+
+        /* Results */
+        .hidden { display: none !important; }
+        .flex-col { display: flex; flex-direction: column; height: 100%; }
+        
+        .result-box { display: flex; gap: 10px; margin-bottom: 10px; }
+        .box { flex: 1; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center; }
+        .box-green { border-color: #14532d; }
+        .text-lg { font-size: 1.2rem; font-weight: bold; }
+        .text-xl { font-size: 1.5rem; font-weight: bold; }
+        .text-green { color: var(--green); }
+        .text-red { color: var(--red); }
+
+
+        /* List */
+        .list-container { flex-grow: 1; overflow-y: auto; padding-bottom: 60px; }
+        .card {
+            background: var(--bg-color);
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-left { display: flex; align-items: center; gap: 10px; }
+        .badge {
+            width: 40px; height: 40px;
+            border: 1px solid var(--orange);
+            color: var(--orange);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 0.9rem;
+        }
+
+
+        /* Empty State */
+        .empty-state { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.3; }
+        .empty-icon { font-size: 3rem; margin-bottom: 10px; }
+
+
+        /* Grid for Denominations */
+        .deno-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+        .deno-btn {
+            padding: 10px; background: var(--card-bg); border: 1px solid var(--border); color: #ccc;
+            border-radius: 6px; font-weight: bold; cursor: pointer;
+        }
+        .deno-btn.selected { background: var(--blue); color: white; border-color: #3b82f6; }
+
+
+        /* Footer Reset */
+        .footer { position: fixed; bottom: 10px; left: 10px; right: 10px; }
+
+
+    </style>
+</head>
+<body>
+
+
+    <div class="header">
+        <h1>ਸੱਚਖੰਡ ਸ੍ਰੀ ਹਰਿਮੰਦਰ ਸਾਹਿਬ</h1>
+        <span class="sub-text">ਸੇਵਾ ਸਹਾਇਕ (Offline)</span>
+    </div>
+
+
+    <div class="tabs">
+        <div id="tab-amount" class="tab-btn active" onclick="switchTab('amount')">ਰਕਮ (Amount)</div>
+        <div id="tab-count" class="tab-btn" onclick="switchTab('count')">ਗਿਣਤੀ (Count)</div>
+    </div>
+
+
+    <!-- TAB 1: AMOUNT -->
+    <div id="content-amount" class="flex-col">
+        <div class="grid-2">
+            <div>
+                <label>ਪ੍ਰਸ਼ਾਦ ਦੀ ਰਕਮ</label>
+                <input type="number" id="amount" placeholder="0" onkeypress="handleEnter(event, 'cashGiven')">
+            </div>
+            <div>
+                <label>ਸੰਗਤ ਨੇ ਦਿੱਤੇ</label>
+                <input type="number" id="cashGiven" class="green-text" placeholder="0" onkeypress="handleEnter(event, 'calculate')">
+            </div>
+        </div>
+
+
+        <button class="btn btn-primary" onclick="calculateSlips()">ਹਿਸਾਬ ਲਗਾਓ (Enter)</button>
+
+
+        <div id="result-container" class="hidden flex-col">
+            <div class="result-box">
+                <div class="box">
+                    <label>ਕੁੱਲ ਰਕਮ</label>
+                    <div id="display-total" class="text-lg">Rs. 0</div>
+                </div>
+                <div class="box box-green">
+                    <label class="text-green">ਵਾਪਸ (Balance)</label>
+                    <div id="display-balance" class="text-xl text-green">Rs. 0</div>
+                </div>
+            </div>
+            <div id="slips-list" class="list-container"></div>
+        </div>
+
+
+        <div id="empty-state" class="empty-state">
+            <div class="empty-icon">☬</div>
+            <p>ਰਕਮ ਭਰੋ</p>
+        </div>
+
+
+        <div class="footer" id="reset-btn-amount">
+            <button class="btn btn-reset" onclick="resetForm()">ਸਾਫ਼ ਕਰੋ (Clear)</button>
+        </div>
+    </div>
+
+
+    <!-- TAB 2: COUNT -->
+    <div id="content-count" class="hidden flex-col">
+        <label style="margin-left: 2px;">ਪਰਚੀ ਚੁਣੋ:</label>
+        <div id="deno-grid" class="deno-grid"></div>
+
+
+        <div class="grid-3">
+            <div>
+                <label>ਗਿਣਤੀ</label>
+                <input type="number" id="count-input" value="1" oninput="calculateManualTotal()">
+            </div>
+            <div>
+                <label>ਸੰਗਤ ਨੇ ਦਿੱਤੇ</label>
+                <input type="number" id="manual-cash-given" class="green-text" placeholder="0" oninput="calculateManualTotal()">
+            </div>
+        </div>
+
+
+        <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-top: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                <span class="sub-text">ਬਟਨ:</span>
+                <span id="manual-key-display" style="color: var(--orange); font-weight: bold; font-size: 1.2rem;">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="color: #ccc;">ਕੁੱਲ ਰਕਮ:</span>
+                <span id="manual-total-display" style="font-size: 1.8rem; font-weight: bold;">Rs. 0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: black; padding: 10px; border-radius: 4px; border: 1px solid #14532d;">
+                <span class="text-green">ਵਾਪਸ ਕਰਨੇ:</span>
+                <span id="manual-balance-display" style="font-size: 1.5rem; font-weight: bold; color: var(--green);">-</span>
+            </div>
+        </div>
+
+
+        <div class="footer">
+            <button class="btn btn-reset" onclick="resetManual()">ਨਵਾਂ ਹਿਸਾਬ (Reset)</button>
+        </div>
+    </div>
+
+
+    <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker Registered'))
+                .catch(err => console.log('SW Failed', err));
+        }
+
+
+        // Logic
+        const SLIPS = [
+            { value: 10, key: "F2" }, { value: 11, key: "F3" },
+            { value: 20, key: "F4" }, { value: 21, key: "F5" },
+            { value: 50, key: "F6" }, { value: 51, key: "F7" },
+            { value: 100, key: "F8" }, { value: 101, key: "F9" },
+            { value: 500, key: "SHIFT + F10" }, { value: 501, key: "SHIFT + F11" },
+            { value: 1000, key: "SHIFT + F12" }
+        ];
+
+
+        let selectedDenomination = null;
+
+
+        window.onload = function() {
+            renderDenominationGrid();
+        }
+
+
+        function switchTab(tab) {
+            document.getElementById('content-amount').classList.toggle('hidden', tab !== 'amount');
+            document.getElementById('content-count').classList.toggle('hidden', tab !== 'count');
+            
+            document.getElementById('tab-amount').classList.toggle('active', tab === 'amount');
+            document.getElementById('tab-count').classList.toggle('active', tab === 'count');
+
+
+            if(tab === 'amount') document.getElementById('amount').focus();
+        }
+
+
+        function renderDenominationGrid() {
+            const grid = document.getElementById('deno-grid');
+            grid.innerHTML = '';
+            SLIPS.forEach(slip => {
+                const btn = document.createElement('div');
+                btn.innerText = slip.value;
+                btn.className = 'deno-btn';
+                btn.onclick = () => {
+                    document.querySelectorAll('.deno-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedDenomination = slip;
+                    document.getElementById('manual-key-display').innerText = slip.key;
+                    document.getElementById('count-input').focus();
+                    document.getElementById('count-input').select();
+                    calculateManualTotal();
+                };
+                grid.appendChild(btn);
+            });
+        }
+
+
+        function calculateManualTotal() {
+            if (!selectedDenomination) return;
+            const count = parseInt(document.getElementById('count-input').value) || 0;
+            const cashGiven = parseInt(document.getElementById('manual-cash-given').value) || 0;
+            const total = selectedDenomination.value * count;
+            
+            document.getElementById('manual-total-display').innerText = `Rs. ${total}`;
+            
+            const balDisplay = document.getElementById('manual-balance-display');
+            if (cashGiven > 0) {
+                const bal = cashGiven - total;
+                balDisplay.innerText = bal < 0 ? `ਘੱਟ: ${Math.abs(bal)}` : `Rs. ${bal}`;
+                balDisplay.style.color = bal < 0 ? 'var(--red)' : 'var(--green)';
+            } else {
+                balDisplay.innerText = "-";
+                balDisplay.style.color = 'var(--green)';
+            }
+        }
+
+
+        function resetManual() {
+            selectedDenomination = null;
+            document.querySelectorAll('.deno-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('count-input').value = 1;
+            document.getElementById('manual-cash-given').value = '';
+            document.getElementById('manual-total-display').innerText = 'Rs. 0';
+            document.getElementById('manual-balance-display').innerText = '-';
+            document.getElementById('manual-key-display').innerText = '-';
+        }
+
+
+        function handleEnter(e, next) {
+            if (e.key === 'Enter') {
+                if (next === 'cashGiven') document.getElementById('cashGiven').focus();
+                else calculateSlips();
+            }
+        }
+
+
+        function calculateSlips() {
+            const amount = parseInt(document.getElementById('amount').value);
+            if (!amount || amount < 10) return;
+
+
+            const cashGiven = parseInt(document.getElementById('cashGiven').value) || 0;
+            const balance = cashGiven - amount;
+
+
+            document.getElementById('display-total').innerText = `Rs. ${amount}`;
+            const balDisplay = document.getElementById('display-balance');
+            
+            if (cashGiven > 0) {
+                balDisplay.innerText = balance < 0 ? `ਘੱਟ: ${Math.abs(balance)}` : `Rs. ${balance}`;
+                balDisplay.style.color = balance < 0 ? 'var(--red)' : 'var(--green)';
+            } else {
+                balDisplay.innerText = "-";
+                balDisplay.style.color = 'var(--text-muted)';
+            }
+
+
+            // DP Algorithm
+            let calcAmount = amount;
+            let thousands = 0;
+            if(calcAmount > 5000) {
+                thousands = Math.floor((calcAmount - 5000)/1000);
+                calcAmount -= thousands * 1000;
+            }
+
+
+            const dpSlips = [...SLIPS].sort((a,b) => b.value - a.value);
+            const dp = new Array(calcAmount + 1).fill(Infinity);
+            const parent = new Array(calcAmount + 1).fill(0);
+            dp[0] = 0;
+
+
+            for (let i = 1; i <= calcAmount; i++) {
+                for (let slip of dpSlips) {
+                    if (i >= slip.value && dp[i - slip.value] + 1 < dp[i]) {
+                        dp[i] = dp[i - slip.value] + 1;
+                        parent[i] = slip.value;
+                    }
+                }
+            }
+
+
+            if (dp[calcAmount] === Infinity) {
+                alert("ਹਿਸਾਬ ਸੰਭਵ ਨਹੀਂ"); return;
+            }
+
+
+            const result = [];
+            for(let i=0; i<thousands; i++) result.push(1000);
+            while (calcAmount > 0) {
+                result.push(parent[calcAmount]);
+                calcAmount -= parent[calcAmount];
+            }
+
+
+            // Render
+            const list = document.getElementById('slips-list');
+            list.innerHTML = '';
+            
+            const counts = {};
+            result.forEach(v => counts[v] = (counts[v] || 0) + 1);
+            
+            Object.keys(counts).sort((a,b) => b-a).forEach(val => {
+                const slip = SLIPS.find(s => s.value == val);
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+                    <div class="card-left">
+                        <div class="badge">${val}</div>
+                        <div class="text-lg">${slip.key}</div>
+                    </div>
+                    <div class="text-xl" style="color: var(--orange)">x ${counts[val]}</div>
+                `;
+                list.appendChild(div);
+            });
+
+
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('result-container').classList.remove('hidden');
+        }
+
+
+        function resetForm() {
+            document.getElementById('amount').value = '';
+            document.getElementById('cashGiven').value = '';
+            document.getElementById('result-container').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+            document.getElementById('amount').focus();
+        }
+    </script>
+</body>
+</html>
