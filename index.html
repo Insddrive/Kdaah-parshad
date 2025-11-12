@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
     
-    <!-- iOS Specific Meta Tags (ਆਈਫੋਨ ਲਈ ਖਾਸ ਟੈਗ) -->
+    <!-- iOS Specific Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Parshad Sewa">
@@ -39,14 +39,44 @@
             flex-direction: column;
             padding: 10px;
             overflow: hidden;
+            overscroll-behavior-y: contain; /* Prevent native pull-refresh conflict */
         }
 
         /* Hide Scrollbar */
         ::-webkit-scrollbar { width: 0px; background: transparent; }
 
+        /* Pull to Refresh Spinner */
+        #ptr-container {
+            position: fixed;
+            top: -60px;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            pointer-events: none;
+            transition: top 0.2s ease-out;
+        }
+        .ptr-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #333;
+            border-top: 3px solid var(--orange);
+            border-radius: 50%;
+            transform: rotate(0deg);
+        }
+        .ptr-loading .ptr-spinner {
+            animation: spin 0.8s linear infinite;
+            border-color: #333;
+            border-top-color: var(--orange);
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         /* Typography */
         h1 { color: var(--orange); font-size: 1.2rem; font-weight: bold; text-align: center; }
-        .header { padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .header { padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; z-index: 10; background: var(--bg-color); }
         .sub-text { font-size: 0.8rem; color: var(--text-muted); }
 
         /* Inputs & Forms */
@@ -105,7 +135,7 @@
         .text-red { color: var(--red); }
 
         /* List */
-        .list-container { flex-grow: 1; overflow-y: auto; padding-bottom: 60px; }
+        .list-container { flex-grow: 1; overflow-y: auto; padding-bottom: 60px; -webkit-overflow-scrolling: touch; }
         .card {
             background: var(--bg-color);
             border: 1px solid #333;
@@ -161,12 +191,16 @@
         .ios-prompt-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .ios-prompt-close { background: none; border: none; color: #888; font-size: 1.2rem; cursor: pointer; }
         .ios-instructions { font-size: 0.9rem; line-height: 1.4; color: #ccc; }
-        .ios-icon-share { display: inline-block; vertical-align: middle; margin: 0 5px; }
         .ios-icon-plus { display: inline-block; vertical-align: middle; margin: 0 5px; background: #333; padding: 2px 5px; border-radius: 4px; font-size: 0.8rem;}
 
     </style>
 </head>
 <body>
+
+    <!-- Pull to Refresh Indicator -->
+    <div id="ptr-container">
+        <div id="ptr-spinner" class="ptr-spinner"></div>
+    </div>
 
     <!-- iOS Install Prompt -->
     <div id="ios-install-prompt">
@@ -273,6 +307,81 @@
                 .catch(err => console.log('SW Failed', err));
         }
 
+        // --- Pull to Refresh Logic ---
+        const ptrContainer = document.getElementById('ptr-container');
+        const ptrSpinner = document.getElementById('ptr-spinner');
+        const pullThreshold = 120;
+        let startY = 0;
+        let isPulling = false;
+
+        // Check if we are at the top of the scrollable content
+        function isAtTop() {
+            const list = document.querySelector('.list-container'); // The scrollable list
+            // If list is visible, check its scrollTop, otherwise we are generally at top in this layout
+            if (list && list.offsetParent !== null) {
+                return list.scrollTop <= 0;
+            }
+            return true; 
+        }
+
+        document.addEventListener('touchstart', (e) => {
+            if (isAtTop()) {
+                startY = e.touches[0].clientY;
+                // Only enable pulling if starting near the top of the screen (e.g. header area) or list is at top
+                if (startY < window.innerHeight) { 
+                    isPulling = true;
+                }
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isPulling) return;
+            
+            const currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+
+            // If pulling down and at top
+            if (diff > 0 && isAtTop()) {
+                // Add resistance
+                const move = Math.min(diff * 0.5, 150); 
+                
+                if(move > 0) {
+                   ptrContainer.style.top = (move - 60) + 'px';
+                   ptrSpinner.style.transform = `rotate(${move * 2}deg)`;
+                }
+            } else {
+                // If scrolled back up, cancel pull
+                isPulling = false;
+                ptrContainer.style.top = '-60px';
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            if (!isPulling) return;
+            isPulling = false;
+
+            const currentY = e.changedTouches[0].clientY;
+            const diff = currentY - startY;
+
+            if (diff > pullThreshold && isAtTop()) {
+                // Trigger Refresh
+                ptrContainer.style.top = '10px';
+                ptrContainer.classList.add('ptr-loading');
+                
+                // Vibration feedback (Android only usually)
+                if (navigator.vibrate) navigator.vibrate(50);
+
+                // Reload after short delay
+                setTimeout(() => {
+                    location.reload();
+                }, 600);
+            } else {
+                // Snap back
+                ptrContainer.style.top = '-60px';
+            }
+        });
+        // -----------------------------
+
         // --- iOS Detection & Prompt Logic ---
         function isIos() {
             const userAgent = window.navigator.userAgent.toLowerCase();
@@ -284,10 +393,7 @@
 
         window.onload = function() {
             renderDenominationGrid();
-            
-            // Show iOS prompt if on iPhone and NOT installed yet
             if (isIos() && !isInStandaloneMode()) {
-                // Check if user already closed it previously in this session to avoid annoyance
                 if (!sessionStorage.getItem('iosPromptClosed')) {
                     document.getElementById('ios-install-prompt').style.display = 'block';
                 }
@@ -298,10 +404,8 @@
             document.getElementById('ios-install-prompt').style.display = 'none';
             sessionStorage.setItem('iosPromptClosed', 'true');
         }
-        // -------------------------------------
-
-
-        // Logic
+        
+        // --- Calculator Logic ---
         const SLIPS = [
             { value: 10, key: "F2" }, { value: 11, key: "F3" },
             { value: 20, key: "F4" }, { value: 21, key: "F5" },
@@ -465,4 +569,5 @@
     </script>
 </body>
 </html>
+
 
