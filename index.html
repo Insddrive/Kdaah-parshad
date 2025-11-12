@@ -30,18 +30,22 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
+        /* Chrome Fix: HTML ਅਤੇ Body ਦੋਵਾਂ ਨੂੰ ਲਾਕ ਕਰੋ */
+        html, body {
+            height: 100%;
+            height: 100dvh; /* Dynamic Viewport Height for Mobile Browsers */
+            width: 100%;
+            overflow: hidden; /* ਸਕਰੋਲ ਸਿਰਫ ਅੰਦਰਲੇ ਹਿੱਸੇ ਵਿੱਚ ਹੋਵੇਗਾ */
+            overscroll-behavior: none; /* Native Refresh ਬੰਦ */
+            background-color: var(--bg-color);
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
             color: var(--text-main);
-            height: 100vh;
             display: flex;
             flex-direction: column;
             padding: 10px;
-            overflow: hidden;
-            /* ਇਹ ਲਾਈਨ ਐਂਡਰਾਇਡ ਦੇ ਆਪਣੇ ਰਿਫ੍ਰੈਸ਼ਰ ਨੂੰ ਰੋਕਦੀ ਹੈ */
-            overscroll-behavior-y: none; 
-            overscroll-behavior: none;
         }
 
         /* Hide Scrollbar */
@@ -50,14 +54,14 @@
         /* Pull to Refresh Spinner */
         #ptr-container {
             position: fixed;
-            top: -80px; /* ਥੋੜ੍ਹਾ ਹੋਰ ਉੱਪਰ ਲੁਕੋਇਆ */
+            top: -80px;
             left: 0;
             width: 100%;
             height: 80px;
             display: flex;
             align-items: flex-end;
             justify-content: center;
-            padding-bottom: 15px;
+            padding-bottom: 20px;
             z-index: 9999;
             pointer-events: none;
             transition: top 0.1s ease-out;
@@ -137,8 +141,14 @@
         .text-green { color: var(--green); }
         .text-red { color: var(--red); }
 
-        /* List */
-        .list-container { flex-grow: 1; overflow-y: auto; padding-bottom: 60px; -webkit-overflow-scrolling: touch; }
+        /* List - Chrome Fix applied here too */
+        .list-container { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding-bottom: 60px; 
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain; /* List ਦੇ ਅੰਦਰ ਵੀ ਰੋਕੋ */
+        }
         .card {
             background: var(--bg-color);
             border: 1px solid #333;
@@ -310,94 +320,88 @@
                 .catch(err => console.log('SW Failed', err));
         }
 
-        // --- Universal Pull to Refresh (Android & iOS) ---
+        // --- Enhanced Pull to Refresh (Robust for Chrome Android) ---
         const ptrContainer = document.getElementById('ptr-container');
         const ptrSpinner = document.getElementById('ptr-spinner');
         let ptrStartY = 0;
         let ptrIsPulling = false;
 
-        // Check if user is at the top of the scrollable area
+        // Check if scroll is at Top
         function isScrollAtTop() {
             const list = document.getElementById('slips-list');
             const isAmountTab = !document.getElementById('content-amount').classList.contains('hidden');
             
-            // If in Amount tab and list exists, check its scroll position
+            // If list is present and visible
             if (isAmountTab && list) {
-                return list.scrollTop <= 0;
+                // We allow a tiny buffer (1px) for calculation errors in some browsers
+                return list.scrollTop <= 1;
             }
-            // If in Amount tab but list is empty, or in Count tab, we are effectively at top
             return true;
         }
 
-        // 1. TOUCH START
-        document.addEventListener('touchstart', (e) => {
-            // We only care if we are at the top
+        window.addEventListener('touchstart', (e) => {
+            // Always track the start touch
             if (isScrollAtTop()) {
                 ptrStartY = e.touches[0].clientY;
                 ptrIsPulling = false;
             }
         }, { passive: true });
 
-        // 2. TOUCH MOVE (The most important part)
-        document.addEventListener('touchmove', (e) => {
+        window.addEventListener('touchmove', (e) => {
             const currentY = e.touches[0].clientY;
             const diff = currentY - ptrStartY;
             
-            // Only engage if:
-            // 1. User is pulling DOWN (diff > 0)
-            // 2. We are at the top of the page (isScrollAtTop)
-            // 3. User isn't just tapping, but dragging (> 5px)
+            // Logic: 
+            // 1. User drags DOWN (diff > 0)
+            // 2. We are at the Top
+            // 3. It's not just a tiny jitter (> 0)
             if (diff > 0 && isScrollAtTop()) {
                  
-                 // Prevent default behavior (Stops Android Refresh & iOS Bounce)
-                 // This requires { passive: false } in the event listener options
-                 if (e.cancelable && diff > 5) {
+                 // CRITICAL for Chrome: Stop native behavior immediately
+                 if (e.cancelable) {
                      e.preventDefault();
                      ptrIsPulling = true;
                  }
 
                  if (ptrIsPulling) {
-                     // Add resistance to the pull (0.4 factor)
-                     const move = Math.min(diff * 0.4, 110); 
+                     // Move spinner
+                     const move = Math.min(diff * 0.5, 120); 
                      ptrContainer.style.top = (move - 80) + 'px';
                      ptrSpinner.style.transform = `rotate(${move * 3}deg)`;
                  }
             } else {
-                // If user scrolls back up, reset
                 ptrIsPulling = false;
                 ptrContainer.style.top = '-80px';
             }
-        }, { passive: false }); // <--- CRITICAL for both Android and iOS support
+        }, { passive: false }); // Passive: false is MANDATORY for Chrome to allow preventDefault
 
-        // 3. TOUCH END
-        document.addEventListener('touchend', (e) => {
+        window.addEventListener('touchend', (e) => {
             if (!ptrIsPulling) return;
             ptrIsPulling = false;
 
-            const currentY = e.changedTouches[0].clientY;
-            const diff = currentY - ptrStartY;
+            // Check how far user pulled (threshold)
+            // Using current CSS transform or last known position is hard, so we estimate via style
+            // A simple way is to check if we moved the container enough visually
+            const topVal = parseInt(ptrContainer.style.top || '-80');
 
-            // If pulled enough (threshold 150px)
-            if (diff > 150) { 
-                // Show loading state
+            if (topVal > -30) { // If it's pulled down enough
+                // Loading Animation
                 ptrContainer.style.top = '15px';
                 ptrContainer.classList.add('ptr-loading');
                 
-                // Haptic Feedback (Works on Android)
                 if (navigator.vibrate) navigator.vibrate(50);
 
-                // Reload page
+                // Reload
                 setTimeout(() => {
                     window.location.reload();
                 }, 500);
             } else {
-                // Snap back to hidden
+                // Reset
                 ptrContainer.style.top = '-80px';
             }
         });
-        // --------------------------------------------------
 
-        // --- iOS Detection & Prompt Logic ---
+        // --- iOS Detection ---
         function isIos() {
             const userAgent = window.navigator.userAgent.toLowerCase();
             return /iphone|ipad|ipod/.test(userAgent);
