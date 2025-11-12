@@ -1,10 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pa">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
+    
+    <!-- iOS Specific Meta Tags (ਆਈਫੋਨ ਲਈ ਖਾਸ ਟੈਗ) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Parshad Sewa">
+    
     <title>Karah Parshad Calculator</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -23,7 +28,6 @@
             --border: #333333;
         }
 
-
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
         body {
@@ -37,16 +41,13 @@
             overflow: hidden;
         }
 
-
         /* Hide Scrollbar */
         ::-webkit-scrollbar { width: 0px; background: transparent; }
-
 
         /* Typography */
         h1 { color: var(--orange); font-size: 1.2rem; font-weight: bold; text-align: center; }
         .header { padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .sub-text { font-size: 0.8rem; color: var(--text-muted); }
-
 
         /* Inputs & Forms */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
@@ -69,7 +70,6 @@
         input:focus { border-color: var(--orange); box-shadow: 0 0 8px var(--orange); }
         input.green-text { color: var(--green); border-color: #555; }
 
-
         /* Buttons */
         .btn {
             width: 100%;
@@ -87,12 +87,10 @@
         .btn-reset { background-color: var(--card-bg); color: #ccc; border: 1px solid var(--border); }
         .btn-reset:active { background-color: #222; }
 
-
         /* Tabs */
         .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 10px; border-radius: 6px; background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border); font-weight: bold; text-align: center; cursor: pointer; }
         .tab-btn.active { background: var(--orange); color: white; border-color: var(--orange); }
-
 
         /* Results */
         .hidden { display: none !important; }
@@ -105,7 +103,6 @@
         .text-xl { font-size: 1.5rem; font-weight: bold; }
         .text-green { color: var(--green); }
         .text-red { color: var(--red); }
-
 
         /* List */
         .list-container { flex-grow: 1; overflow-y: auto; padding-bottom: 60px; }
@@ -129,11 +126,9 @@
             font-weight: bold; font-size: 0.9rem;
         }
 
-
         /* Empty State */
         .empty-state { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.3; }
         .empty-icon { font-size: 3rem; margin-bottom: 10px; }
-
 
         /* Grid for Denominations */
         .deno-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
@@ -143,27 +138,57 @@
         }
         .deno-btn.selected { background: var(--blue); color: white; border-color: #3b82f6; }
 
-
         /* Footer Reset */
         .footer { position: fixed; bottom: 10px; left: 10px; right: 10px; }
 
+        /* iOS Install Prompt Styling */
+        #ios-install-prompt {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            background: #222;
+            border: 1px solid var(--orange);
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            color: white;
+        }
+        .ios-prompt-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .ios-prompt-close { background: none; border: none; color: #888; font-size: 1.2rem; cursor: pointer; }
+        .ios-instructions { font-size: 0.9rem; line-height: 1.4; color: #ccc; }
+        .ios-icon-share { display: inline-block; vertical-align: middle; margin: 0 5px; }
+        .ios-icon-plus { display: inline-block; vertical-align: middle; margin: 0 5px; background: #333; padding: 2px 5px; border-radius: 4px; font-size: 0.8rem;}
 
     </style>
 </head>
 <body>
 
+    <!-- iOS Install Prompt -->
+    <div id="ios-install-prompt">
+        <div class="ios-prompt-header">
+            <span style="color: var(--orange); font-weight: bold;">ਆਈਫੋਨ 'ਤੇ ਇੰਸਟਾਲ ਕਰੋ</span>
+            <button class="ios-prompt-close" onclick="closeIosPrompt()">×</button>
+        </div>
+        <div class="ios-instructions">
+            1. ਹੇਠਾਂ ਦਿੱਤੇ <strong>Share</strong> <span style="font-size:1.2rem">⎋</span> ਬਟਨ 'ਤੇ ਕਲਿੱਕ ਕਰੋ।<br>
+            2. ਫਿਰ <strong>'Add to Home Screen'</strong> <span class="ios-icon-plus">+</span> ਚੁਣੋ।
+        </div>
+    </div>
 
     <div class="header">
         <h1>ਸੱਚਖੰਡ ਸ੍ਰੀ ਹਰਿਮੰਦਰ ਸਾਹਿਬ</h1>
         <span class="sub-text">ਸੇਵਾ ਸਹਾਇਕ (Offline)</span>
     </div>
 
-
     <div class="tabs">
         <div id="tab-amount" class="tab-btn active" onclick="switchTab('amount')">ਰਕਮ (Amount)</div>
         <div id="tab-count" class="tab-btn" onclick="switchTab('count')">ਗਿਣਤੀ (Count)</div>
     </div>
-
 
     <!-- TAB 1: AMOUNT -->
     <div id="content-amount" class="flex-col">
@@ -178,9 +203,7 @@
             </div>
         </div>
 
-
         <button class="btn btn-primary" onclick="calculateSlips()">ਹਿਸਾਬ ਲਗਾਓ (Enter)</button>
-
 
         <div id="result-container" class="hidden flex-col">
             <div class="result-box">
@@ -196,24 +219,20 @@
             <div id="slips-list" class="list-container"></div>
         </div>
 
-
         <div id="empty-state" class="empty-state">
             <div class="empty-icon">☬</div>
             <p>ਰਕਮ ਭਰੋ</p>
         </div>
-
 
         <div class="footer" id="reset-btn-amount">
             <button class="btn btn-reset" onclick="resetForm()">ਸਾਫ਼ ਕਰੋ (Clear)</button>
         </div>
     </div>
 
-
     <!-- TAB 2: COUNT -->
     <div id="content-count" class="hidden flex-col">
         <label style="margin-left: 2px;">ਪਰਚੀ ਚੁਣੋ:</label>
         <div id="deno-grid" class="deno-grid"></div>
-
 
         <div class="grid-3">
             <div>
@@ -225,7 +244,6 @@
                 <input type="number" id="manual-cash-given" class="green-text" placeholder="0" oninput="calculateManualTotal()">
             </div>
         </div>
-
 
         <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-top: 10px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">
@@ -242,12 +260,10 @@
             </div>
         </div>
 
-
         <div class="footer">
             <button class="btn btn-reset" onclick="resetManual()">ਨਵਾਂ ਹਿਸਾਬ (Reset)</button>
         </div>
     </div>
-
 
     <script>
         // Service Worker Registration
@@ -256,6 +272,33 @@
                 .then(() => console.log('Service Worker Registered'))
                 .catch(err => console.log('SW Failed', err));
         }
+
+        // --- iOS Detection & Prompt Logic ---
+        function isIos() {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent);
+        }
+        function isInStandaloneMode() {
+            return ('standalone' in window.navigator) && (window.navigator.standalone);
+        }
+
+        window.onload = function() {
+            renderDenominationGrid();
+            
+            // Show iOS prompt if on iPhone and NOT installed yet
+            if (isIos() && !isInStandaloneMode()) {
+                // Check if user already closed it previously in this session to avoid annoyance
+                if (!sessionStorage.getItem('iosPromptClosed')) {
+                    document.getElementById('ios-install-prompt').style.display = 'block';
+                }
+            }
+        }
+
+        function closeIosPrompt() {
+            document.getElementById('ios-install-prompt').style.display = 'none';
+            sessionStorage.setItem('iosPromptClosed', 'true');
+        }
+        // -------------------------------------
 
 
         // Logic
@@ -268,14 +311,7 @@
             { value: 1000, key: "SHIFT + F12" }
         ];
 
-
         let selectedDenomination = null;
-
-
-        window.onload = function() {
-            renderDenominationGrid();
-        }
-
 
         function switchTab(tab) {
             document.getElementById('content-amount').classList.toggle('hidden', tab !== 'amount');
@@ -284,10 +320,8 @@
             document.getElementById('tab-amount').classList.toggle('active', tab === 'amount');
             document.getElementById('tab-count').classList.toggle('active', tab === 'count');
 
-
             if(tab === 'amount') document.getElementById('amount').focus();
         }
-
 
         function renderDenominationGrid() {
             const grid = document.getElementById('deno-grid');
@@ -309,7 +343,6 @@
             });
         }
 
-
         function calculateManualTotal() {
             if (!selectedDenomination) return;
             const count = parseInt(document.getElementById('count-input').value) || 0;
@@ -329,7 +362,6 @@
             }
         }
 
-
         function resetManual() {
             selectedDenomination = null;
             document.querySelectorAll('.deno-btn').forEach(b => b.classList.remove('selected'));
@@ -340,7 +372,6 @@
             document.getElementById('manual-key-display').innerText = '-';
         }
 
-
         function handleEnter(e, next) {
             if (e.key === 'Enter') {
                 if (next === 'cashGiven') document.getElementById('cashGiven').focus();
@@ -348,15 +379,12 @@
             }
         }
 
-
         function calculateSlips() {
             const amount = parseInt(document.getElementById('amount').value);
             if (!amount || amount < 10) return;
 
-
             const cashGiven = parseInt(document.getElementById('cashGiven').value) || 0;
             const balance = cashGiven - amount;
-
 
             document.getElementById('display-total').innerText = `Rs. ${amount}`;
             const balDisplay = document.getElementById('display-balance');
@@ -369,7 +397,6 @@
                 balDisplay.style.color = 'var(--text-muted)';
             }
 
-
             // DP Algorithm
             let calcAmount = amount;
             let thousands = 0;
@@ -378,12 +405,10 @@
                 calcAmount -= thousands * 1000;
             }
 
-
             const dpSlips = [...SLIPS].sort((a,b) => b.value - a.value);
             const dp = new Array(calcAmount + 1).fill(Infinity);
             const parent = new Array(calcAmount + 1).fill(0);
             dp[0] = 0;
-
 
             for (let i = 1; i <= calcAmount; i++) {
                 for (let slip of dpSlips) {
@@ -394,11 +419,9 @@
                 }
             }
 
-
             if (dp[calcAmount] === Infinity) {
                 alert("ਹਿਸਾਬ ਸੰਭਵ ਨਹੀਂ"); return;
             }
-
 
             const result = [];
             for(let i=0; i<thousands; i++) result.push(1000);
@@ -406,7 +429,6 @@
                 result.push(parent[calcAmount]);
                 calcAmount -= parent[calcAmount];
             }
-
 
             // Render
             const list = document.getElementById('slips-list');
@@ -429,11 +451,9 @@
                 list.appendChild(div);
             });
 
-
             document.getElementById('empty-state').classList.add('hidden');
             document.getElementById('result-container').classList.remove('hidden');
         }
-
 
         function resetForm() {
             document.getElementById('amount').value = '';
@@ -445,3 +465,4 @@
     </script>
 </body>
 </html>
+
